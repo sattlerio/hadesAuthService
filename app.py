@@ -6,6 +6,7 @@ import unittest
 from flask import Flask, cli
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from config import *
 
@@ -34,6 +35,7 @@ app = Flask(__name__)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
+CORS(app)
 
 app.config['ENV'] = ENV
 app.config.from_object(ENV)

@@ -51,7 +51,7 @@ class ViewsTestCase(unittest.TestCase):
         rv = self.app.post('/auth/login',
                            data=json.dumps(dict(username='franz', password="tipsi")),
                            content_type='application/json')
-        assert rv.status_code == 404
+        assert rv.status_code == 400
         data = json.loads(rv.data)
         assert data["status"] == "error"
         assert data["message"] == "unknown user"
@@ -115,7 +115,17 @@ class ViewsTestCase(unittest.TestCase):
                                'Authorization': 'Bearer ' + access_token
                            })
         assert rv.status_code == 200
+
+        # test refresh token
+        rv = self.app.get("/auth/user",
+                          content_type="application/json",
+                          headers={
+                              'Authorization': 'Bearer ' + access_token
+                          })
+        assert rv.status_code == 200
         data = json.loads(rv.data)
+        assert data["status"] == "OK"
+        assert data["user"]["email"] == "max@mustermann.com"
 
         rv = self.app.post('/auth/login',
                            data=json.dumps(dict(username='max@mustermann.com', password="d0nt4get")),

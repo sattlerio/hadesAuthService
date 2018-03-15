@@ -15,6 +15,39 @@ def test():
     return "pong"
 
 
+@authentication.route('/user')
+@jwt_required
+def fetch_user_information():
+    tid = uuid.uuid4()
+    app.logger.info(f"new request to fetch user identity - {tid}")
+
+    current_user = get_jwt_identity()
+    app.logger.info(f"{tid}: successfully validated user identity")
+
+    user_query = User.query.filter_by(user_uuid=current_user["uuid"])
+    if user_query.count() == 1:
+        user = user_query.first()
+
+        data = {
+            "firstname": user.firstname,
+            "lastname": user.lastname,
+            "email": user.email,
+            "user_id": user.user_uuid
+        }
+
+        return jsonify({
+            "status": "OK",
+            "request_id": tid,
+            "user": data
+        })
+
+    return jsonify({
+        "status": "error",
+        "request_id": tid,
+        "message": "unable to get user identity"
+    }), 500
+
+
 def _handle_regular_login(data, t_id, refresh=False):
     app.logger.info(f"{t_id}: handle default login with username and password")
 
@@ -36,7 +69,7 @@ def _handle_regular_login(data, t_id, refresh=False):
             "status": "error",
             "request_id": t_id,
             "message": "unknown user"
-        }), 404
+        }), 400
 
     user = user.first()
     if not user.check_password(password):
@@ -92,6 +125,7 @@ def login():
     data = request.get_json()
     return _handle_regular_login(data, t_id)
 
+
 @authentication.route("/fresh-login", methods=["POST"])
 def fresh_login():
     t_id = str(uuid.uuid4())
@@ -114,7 +148,6 @@ def fresh_login():
 
     data = request.get_json()
     return _handle_regular_login(data, t_id, refresh=True)
-
 
 
 @authentication.route('/refresh', methods=['POST'])
@@ -154,7 +187,6 @@ def change_password():
             "request_id": tid,
             "message": "you have to set content type to json"
         }), 400
-
 
     current_user = get_jwt_identity()
 
