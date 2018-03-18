@@ -1,4 +1,4 @@
-from flask import jsonify, request, Blueprint, current_app as app
+from flask import jsonify, request, Blueprint, Response, current_app as app
 from hades.models import *
 from flask_jwt_extended import (
     create_access_token, create_refresh_token,
@@ -15,6 +15,74 @@ def test():
     return "pong"
 
 
+@authentication.route('/fetch/user_companies')
+@jwt_required
+def fetch_user_companies():
+    tid = uuid.uuid4()
+    app.logger.info(f"{tid}: new request to fetch user companies")
+
+    current_user = get_jwt_identity()
+    app.logger.info(f"{tid}: validated user identity")
+
+    user = User.query.filter_by(user_uuid=current_user["uuid"]).first_or_404()
+
+    single_company = False
+    if len(user.companies) == 1:
+        single_company = True
+
+    companies = []
+    for company in user.companies:
+        companies.append({
+            "name": company.name,
+            "company_id": company.company_uuid
+        })
+
+    data = {
+        "status": "OK",
+        "request_id": tid,
+        "companies": companies,
+        "single_company": single_company
+    }
+    return jsonify(data)
+
+
+@authentication.route('/validate/user_company/<company_id>', methods=["GET"])
+@jwt_required
+def validate_user_company(company_id):
+    tid = uuid.uuid4()
+    app.logger.info(f"{tid}: new request to validate user company permissions")
+
+    current_user = get_jwt_identity()
+    app.logger.info(f"{tid}: validated user identity")
+
+    query = User.query.filter(User.companies.any(company_uuid=company_id)).filter_by(user_uuid=current_user["uuid"])
+    if query.count() == 1:
+        app.logger.info(f"{tid}: user is allowed to access resource")
+        return jsonify(status="OK",
+                       message="User is allowed to access company",
+                       request_id=tid), 200
+    else:
+        u = User.query.filter_by(user_uuid=current_user["uuid"]).first_or_404()
+        app.logger.info(f"{tid}: user is not allowed to access resource, check single or multi user")
+        if len(u.companies) == 1:
+            app.logger.info(f"{tid}: abort transaction - user is single merchant")
+            return jsonify(
+                status="ERROR",
+                message="Company does not exist",
+                request_id=tid,
+                single_company=True,
+                company=u.companies[0].company_uuid
+            ), 400
+        else:
+            app.logger.info(f"{tid}: abort transaction - user is multi merchant")
+            return jsonify(
+                status="ERROR",
+                message="Company does not exist",
+                request_id=tid,
+                single_company=False
+            ), 400
+
+
 @authentication.route('/user')
 @jwt_required
 def fetch_user_information():
@@ -28,17 +96,25 @@ def fetch_user_information():
     if user_query.count() == 1:
         user = user_query.first()
 
+        companies = []
+        for company in user.companies:
+            companies.append({
+                "company_uuid": company.company_uuid,
+                "company_name": company.name
+            })
+
         data = {
             "firstname": user.firstname,
             "lastname": user.lastname,
             "email": user.email,
-            "user_id": user.user_uuid
+            "user_id": user.user_uuid,
+            "companies": companies
         }
 
         return jsonify({
             "status": "OK",
             "request_id": tid,
-            "user": data
+            "data": data
         })
 
     return jsonify({
@@ -172,6 +248,32 @@ def refresh_token():
             "request_id": tid,
             "message": "user doesnt exist"
         }), 400
+
+
+@authentication.route("/refresh")
+@jwt_required
+def renew_fresh_token():
+    tid = uuid.uuid4()
+    app.logger.info(f"got new request to refresh token: {tid}")
+    current_user = get_jwt_identity()
+
+    if User.query.filter_by(user_uuid=current_user["uuid"]).count() == 1:
+        new_token = create_access_token(identity=current_user, fresh=False)
+        resp = Response(jsonify({
+            'access_token': new_token,
+            "status": "OK",
+            "message": "successfully refreshed access token",
+            "request_id": tid
+        }))
+        resp.headers["Authorization"] = new_token
+
+        return resp, 200
+    else:
+        return jsonify({
+            "status": "error",
+            "request_id": tid,
+            "message": "user is not allowed to access"
+        }), 401
 
 
 @authentication.route('/change-password', methods=['PUT'])

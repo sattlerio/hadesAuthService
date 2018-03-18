@@ -20,9 +20,13 @@ class ViewsTestCase(unittest.TestCase):
             user1 = User("Max", "Mustermann", "max@mustermann.com",
                          "d0nt4get",
                          False, False, False, [company1])
+            user2 = User("Test", "Test", "test@test.com",
+                         "d0nt4get",
+                         False, False, False, [company1])
 
             app.db.session.add(company1)
             app.db.session.add(user1)
+            app.db.session.add(user2)
             app.db.session.commit()
 
     def test_ping_route(self):
@@ -78,9 +82,7 @@ class ViewsTestCase(unittest.TestCase):
         assert user["identity"]["firstname"] == "Max"
         assert user["identity"]["lastname"] == "Mustermann"
 
-        access_token = data["access_token"]
         refresh_token = data["refresh_token"]
-
 
         # test refresh token
         rv = self.app.post("/auth/refresh",
@@ -91,7 +93,6 @@ class ViewsTestCase(unittest.TestCase):
         assert rv.status_code == 200
         data = json.loads(rv.data)
         assert "access_token" in data
-        access_token = data["access_token"]
 
         # test successfull user
         rv = self.app.post('/auth/fresh-login',
@@ -109,11 +110,11 @@ class ViewsTestCase(unittest.TestCase):
 
         # test refresh token
         rv = self.app.put("/auth/change-password",
-                           content_type="application/json",
+                          content_type="application/json",
                           data=json.dumps(dict(password="newPassword")),
-                           headers={
-                               'Authorization': 'Bearer ' + access_token
-                           })
+                          headers={
+                              'Authorization': 'Bearer ' + access_token
+                          })
         assert rv.status_code == 200
 
         # test refresh token
@@ -125,7 +126,6 @@ class ViewsTestCase(unittest.TestCase):
         assert rv.status_code == 200
         data = json.loads(rv.data)
         assert data["status"] == "OK"
-        assert data["user"]["email"] == "max@mustermann.com"
 
         rv = self.app.post('/auth/login',
                            data=json.dumps(dict(username='max@mustermann.com', password="d0nt4get")),
@@ -134,6 +134,29 @@ class ViewsTestCase(unittest.TestCase):
         data = json.loads(rv.data)
         assert data["status"] == "error"
 
+    def test_fetch_user_companies(self):
+        rv = self.app.post('/auth/login',
+                           data=json.dumps(dict(username='test@test.com', password="d0nt4get")),
+                           content_type='application/json')
+        assert rv.status_code == 200
+
+        data = json.loads(rv.data)
+
+        at = data["access_token"]
+
+        rv = self.app.get("/auth/fetch/user_companies",
+                          content_type="application/json",
+                          headers={
+                              'Authorization': 'Bearer ' + at
+                          })
+
+        assert rv.status_code == 200
+        data = json.loads(rv.data)
+        assert data["status"] == "OK"
+        companies = data['companies']
+        assert len(companies) == 1
+        assert companies[0]['name'] == "test1"
+        assert data["single_company"]
 
     def tearDown(self):
         app.db.session.remove()
