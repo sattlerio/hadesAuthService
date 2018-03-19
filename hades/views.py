@@ -340,8 +340,9 @@ def change_password():
     current_user = get_jwt_identity()
 
     password = request.get_json().get('password', None)
+    old_password = request.get_json().get("old_password", None)
 
-    if not password:
+    if not password or not old_password:
         app.logger.info(f"abort transaction {tid} because of missing data")
         return jsonify({
             "status": "error",
@@ -358,7 +359,17 @@ def change_password():
         }), 400
 
     user = User.query.filter_by(user_uuid=current_user["uuid"]).first()
+    if not user.check_password(old_password):
+        app.logger.info(f"abort transaction {tid} because old password is wrong")
+        return jsonify({
+            "status": "error",
+            "request_id": tid,
+            "message": "user doesnt exist"
+        }), 500
+
     user._set_password(password)
+    db.session.add(user)
+    db.session.commit()
 
     app.logger.info(f"{tid} successfully changed password")
     return jsonify({
