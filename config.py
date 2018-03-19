@@ -1,4 +1,5 @@
 import os
+import datetime
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -13,6 +14,7 @@ class Config(object):
     BUILD_ID = "##BUILD_ID##"
     BUILD_TAG = "##BUILD_TAG##"
     GIT_COMMIT = "##GIT_COMMIT##"
+    JWT_ACCESS_TOKEN_EXPIRES = datetime.timedelta(days=0, hours=4)
 
 
 class ProductionConfig(Config):

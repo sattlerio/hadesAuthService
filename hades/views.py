@@ -178,6 +178,53 @@ def _handle_regular_login(data, t_id, refresh=False):
     return jsonify(data), 200
 
 
+@authentication.route("/user", methods=["POST"])
+@jwt_required
+def change_user():
+    t_id = str(uuid.uuid4())
+    current_user = get_jwt_identity()
+    app.logger.info(f"new adapt user transaction {t_id}")
+    if not request.is_json:
+        app.logger.info(f"abort transaction {t_id} because of wrong contentype")
+        return jsonify({
+            "status": "error",
+            "request_id": t_id,
+            "message": "you have to set content type to json"
+        }), 400
+
+    if not request.data:
+        app.logger.info(f"abort transaction {t_id} because of missing header")
+        return jsonify({
+            "status": "error",
+            "request_id": t_id,
+            "message": "please submit data"
+        }), 400
+
+    data = request.get_json()
+    if User.query.filter_by(user_uuid=current_user["uuid"]).count() == 1:
+        user = User.query.filter_by(user_uuid=current_user["uuid"]).first()
+
+        firstname = data.get("firstname", None)
+        lastname = data.get("lastname", None)
+        email = data.get("email", None)
+
+        if firstname:
+            user.firstname = data["firstname"]
+        if lastname:
+            user.lastname = data["lastname"]
+        if email:
+            user.email = data["email"]
+
+    db.session.add(user)
+    db.session.commit()
+
+    return jsonify(request_id=t_id,
+                   status="OK",
+                   message="Successfully updated user")
+
+
+
+
 @authentication.route("/login", methods=["POST"])
 def login():
     t_id = str(uuid.uuid4())

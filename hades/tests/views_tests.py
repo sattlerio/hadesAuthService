@@ -158,6 +158,27 @@ class ViewsTestCase(unittest.TestCase):
         assert companies[0]['name'] == "test1"
         assert data["single_company"]
 
+    def test_change_user(self):
+        rv = self.app.post('/auth/login',
+                           data=json.dumps(dict(username='test@test.com', password="d0nt4get")),
+                           content_type='application/json')
+        assert rv.status_code == 200
+
+        data = json.loads(rv.data)
+
+        at = data["access_token"]
+
+        rv = self.app.post("/auth/fetch/user_companies",
+                           data=json.dumps(dict(firstname="Robert", lastname="Debur", email="robert@debur.com")),
+                          content_type="application/json",
+                          headers={
+                              'Authorization': 'Bearer ' + at
+                          })
+
+        assert rv.status_code == 200
+        data = json.loads(rv.data)
+        assert data["status"] == "OK"
+
     def tearDown(self):
         app.db.session.remove()
         app.db.drop_all()
