@@ -9,6 +9,32 @@ rel_user2company = db.Table('rel_user2company',
                             )
 
 
+class UserCompaniesPermission(db.Model):
+    __tablename__ = "user_companies_permissions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'))
+    permission = db.Column(db.Integer, nullable=False)
+
+    __table_args__ = (db.UniqueConstraint('user_id', 'company_id', name='_user_company_permission_uc'),)
+
+    def get_permission(self):
+        perm = self.permission
+
+        if perm == 0:
+            permission = "admin"
+        else:
+            permission = "default"
+
+        return permission
+
+    def __init__(self, user_id, company_id, permission):
+        self.user_id = user_id
+        self.company_id = company_id
+        self.permission = permission
+
+
 class User(db.Model):
     __tablename__ = 'users'
 
@@ -25,6 +51,8 @@ class User(db.Model):
 
     companies = db.relationship('Company', secondary=rel_user2company, lazy='subquery',
                                 backref=db.backref('users', lazy=True))
+    permissions = db.relationship('UserCompaniesPermission',
+                                  backref=db.backref('users'))
 
     def __init__(self, firstname, lastname, email, password, employee=False, admin=False, service_agent=False, companies=None):
         uid = uuid.uuid4().hex

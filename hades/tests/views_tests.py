@@ -179,6 +179,9 @@ class ViewsTestCase(unittest.TestCase):
         data = json.loads(rv.data)
         assert data["status"] == "OK"
 
+    def test_permission(self):
+        assert 1 == 2
+
     def tearDown(self):
         app.db.session.remove()
         app.db.drop_all()

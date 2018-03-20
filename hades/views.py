@@ -83,6 +83,29 @@ def validate_user_company(company_id):
             ), 400
 
 
+@authentication.route("/user/permission/<company_id>")
+@jwt_required
+def fetch_user_permission(company_id):
+    tid = uuid.uuid4()
+    app.logger.info(f"new request to fetch user permission - {tid}")
+
+    current_user = get_jwt_identity()
+    app.logger.info(f"{tid}: successfully validated user identity")
+
+    company = Company.query.filter_by(company_uuid=company_id).first_or_404()
+    permission = UserCompaniesPermission.query.filter_by(company_id=company.id).filter_by(user_id=current_user['user_id'])
+
+    if permission.count() == 1:
+        perm = permission.first().get_permission()
+    else:
+        perm = 'default'
+
+    return jsonify(status="OK",
+                   company_id=company_id,
+                   permission=perm,
+                   request_id=tid)
+
+
 @authentication.route('/user')
 @jwt_required
 def fetch_user_information():
@@ -103,12 +126,19 @@ def fetch_user_information():
                 "company_name": company.name
             })
 
+        if len(companies) == 1:
+            multimerchant = True
+        else:
+            multimerchant = False
+
         data = {
             "firstname": user.firstname,
             "lastname": user.lastname,
             "email": user.email,
             "user_id": user.user_uuid,
-            "companies": companies
+            "companies": companies,
+            "multimerchant": multimerchant,
+            "permission": False
         }
 
         return jsonify({
@@ -160,7 +190,8 @@ def _handle_regular_login(data, t_id, refresh=False):
         "firstname": user.firstname,
         "lastname": user.lastname,
         "email": user.email,
-        "uuid": user.user_uuid
+        "uuid": user.user_uuid,
+        'user_id': user.id
     }
     access_token = create_access_token(identity=identity, fresh=True)
     app.logger.info(f"{t_id} successfully logged in user")
@@ -221,8 +252,6 @@ def change_user():
     return jsonify(request_id=t_id,
                    status="OK",
                    message="Successfully updated user")
-
-
 
 
 @authentication.route("/login", methods=["POST"])

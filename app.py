@@ -32,14 +32,13 @@ except ImproperlyConfigured:
     ENV = 'config.DevelopmentConfig'
 
 app = Flask(__name__)
+app.config['ENV'] = ENV
+app.config.from_object(ENV)
+
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
 CORS(app)
-
-app.config['ENV'] = ENV
-app.config.from_object(ENV)
-
 
 # app config
 if ENV == ENVS[0]:
