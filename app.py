@@ -38,7 +38,6 @@ app.config.from_object(ENV)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
-CORS(app)
 
 # app config
 if ENV == ENVS[0]:

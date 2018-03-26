@@ -8,8 +8,8 @@ class Config(object):
     TESTING = False
     CSRF_ENABLED = True
     SECRET_KEY = 'this-really-needs-to-be-changed'
-    JWT_SECRET_KEY = "super secret"
-
+    JWT_SECRET_KEY = "secret"
+    JWT_ALGORITHM = "HS256"
     BUILD_NUMBER = "##BUILD_NUMBER##"
     BUILD_ID = "##BUILD_ID##"
     BUILD_TAG = "##BUILD_TAG##"

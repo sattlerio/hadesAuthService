@@ -85,6 +85,17 @@ class Company(db.Model):
     company_uuid = db.Column(db.String(250), unique=True, nullable=False)
     name = db.Column(db.String(250), nullable=False)
 
+    country_id = db.Column(db.String(10), nullable=False)
+    address = db.Column(db.String(250), nullable=False)
+    zip = db.Column(db.String(250), nullable=False)
+    city = db.Column(db.String(250), nullable=False)
+    vat = db.Column(db.String(250), nullable=True)
+    logo = db.Column(db.String(250), nullable=True)
+    phone_number = db.Column(db.String(250), nullable=False)
+    email_address = db.Column(db.String(250), nullable=False)
+    accounting_email = db.Column(db.String(250), nullable=True)
+    technical_email = db.Column(db.String(250), nullable=True)
+
     def __init__(self, name):
         uuid = self._get_company_uuid()
         self.company_uuid = uuid

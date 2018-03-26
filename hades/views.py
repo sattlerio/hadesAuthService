@@ -341,7 +341,8 @@ def renew_fresh_token():
             "message": "successfully refreshed access token",
             "request_id": tid
         }))
-        resp.headers["Authorization"] = new_token
+        if "Authorization" not in resp.headers:
+            resp.headers["Authorization"] = new_token
 
         return resp, 200
     else:
