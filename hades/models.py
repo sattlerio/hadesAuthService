@@ -96,6 +96,8 @@ class Company(db.Model):
     accounting_email = db.Column(db.String(250), nullable=True)
     technical_email = db.Column(db.String(250), nullable=True)
 
+    currency_id = db.Column(db.String(250), nullable=False)
+
     def __init__(self, name):
         uuid = self._get_company_uuid()
         self.company_uuid = uuid
