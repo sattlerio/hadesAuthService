@@ -24,6 +24,8 @@ class UserCompaniesPermission(db.Model):
 
         if perm == 0:
             permission = "admin"
+        elif perm == 1:
+            permission = "manager"
         else:
             permission = "default"
 
@@ -97,6 +99,7 @@ class Company(db.Model):
     technical_email = db.Column(db.String(250), nullable=True)
 
     currency_id = db.Column(db.String(250), nullable=False)
+    language_id = db.Column(db.String(250), nullable=False)
 
     def __init__(self, name):
         uuid = self._get_company_uuid()
