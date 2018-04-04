@@ -5,7 +5,8 @@ import uuid
 
 rel_user2company = db.Table('rel_user2company',
                             db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
-                            db.Column('company_id', db.Integer, db.ForeignKey('companies.id'), primary_key=True)
+                            db.Column('company_id', db.Integer, db.ForeignKey('companies.id'), primary_key=True),
+                            db.Column('permission', db.Integer, nullable=False)
                             )
 
 
@@ -26,6 +27,8 @@ class UserCompaniesPermission(db.Model):
             permission = "admin"
         elif perm == 1:
             permission = "manager"
+        elif perm == 2:
+            permission = "accountant"
         else:
             permission = "default"
 
