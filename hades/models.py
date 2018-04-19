@@ -29,6 +29,8 @@ class UserCompaniesPermission(db.Model):
             permission = "manager"
         elif perm == 2:
             permission = "accountant"
+        elif perm == 3:
+            permission = "product_manager"
         else:
             permission = "default"
 
